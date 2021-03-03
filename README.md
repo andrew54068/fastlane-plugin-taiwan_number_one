@@ -66,6 +66,14 @@ lane :upload_production_and_testFlight do |options|
 end
 ```
 
+or 
+
+```
+release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::RELEASE)
+
+release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::REJECT)
+```
+
 #### Use in terminal
 
 Run `taiwan_number_one` to release or reject only when the reviewed version status is `Pending Developer Release`, otherwise do nothing.
