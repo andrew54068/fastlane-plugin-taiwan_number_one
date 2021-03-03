@@ -71,8 +71,8 @@ end
 Run `taiwan_number_one` to release or reject only when the reviewed version status is `Pending Developer Release`, otherwise do nothing.
 
 ```
-bundle exec fastlane release_app_store_version app_decision:"reject" username:"your apple id" app_identifier:"bundle id"
-bundle exec fastlane release_app_store_version app_decision:"release" username:"your apple id" app_identifier:"bundle id"
+bundle exec fastlane release_decision app_decision:"reject" username:"your apple id" app_identifier:"bundle id"
+bundle exec fastlane release_decision app_decision:"release" username:"your apple id" app_identifier:"bundle id"
 ```
 
 ##### Default values
