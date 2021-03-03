@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.email         = 'andrew0424718012@yahoo.com.tw'
 
   spec.summary       = 'approve or reject first if status is Pending Developer Release.'
-  # spec.homepage      = "https://github.com/<GITHUB_USERNAME>/fastlane-plugin-taiwan_number_one"
+  spec.homepage      = "https://github.com/andrew54068/fastlane-plugin-taiwan_number_one"
   spec.license       = "MIT"
 
   spec.files         = Dir["lib/**/*"] + %w(README.md LICENSE)
