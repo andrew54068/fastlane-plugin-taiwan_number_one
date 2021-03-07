@@ -1,5 +1,5 @@
 require "fastlane/action"
-require "Spaceship/client"
+require "Spaceship"
 require_relative "../helper/taiwan_number_one_helper"
 
 module Fastlane
@@ -11,8 +11,6 @@ module Fastlane
       end
 
       def self.run(params)
-        require "spaceship"
-
         app_id = params.fetch(:app_identifier)
         username = params.fetch(:username)
         unless app_id && username
