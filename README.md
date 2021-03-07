@@ -33,6 +33,17 @@ https://github.com/fastlane/fastlane/issues/17539
 
 ## Usage
 
+##### install plugin for fastlane
+[install instructions](https://docs.fastlane.tools/plugins/using-plugins/)
+```
+bundle exce fastlane add_plugin taiwan_number_one
+```
+but I personally prefer adding plugin in `Gemfile` like this to avoid additional `Pluginfile` in ~'your_ios_project_dir'/fastlane
+
+```
+bundle add fastlane-plugin-taiwan_number_one
+```
+
 ##### Show info
 
 ```
