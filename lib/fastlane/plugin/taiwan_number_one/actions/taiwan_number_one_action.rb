@@ -13,7 +13,12 @@ module Fastlane
       def self.run(params)
         require "spaceship"
 
-        app_id = params[:app_identifier]
+        app_id = params.fetch(:app_identifier)
+        username = params.fetch(:username)
+        unless app_id && username
+          UI.message("Could not find app_id and username.")
+          return
+        end
 
         # Prompts select team if multiple teams and none specified
         UI.message("Login to App Store Connect (#{params[:username]})")
@@ -35,8 +40,6 @@ module Fastlane
         app = Spaceship::ConnectAPI::App.find(app_id)
         version = app.get_app_store_versions.first
         UI.message("app_store_state is #{version.app_store_state}")
-        UI.message("version string is #{version.version_string}")
-        UI.message("pending version is #{version}")
         client ||= Spaceship::ConnectAPI
         platform ||= Spaceship::ConnectAPI::Platform::IOS
         filter = {
@@ -49,72 +52,61 @@ module Fastlane
                                .sort_by { |v| Gem::Version.new(v.version_string) }
                                .last
         if app_store_version
-          UI.message("app_store_version is #{app_store_version}")
-          state = app_store_version.app_store_state
-          UI.message("state is #{state}")
-  
           version_string = app_store_version.version_string
-          UI.message("version_string is #{version_string}")
+          state = app_store_version.app_store_state
+          UI.message("version #{version_string} is #{state}")
           unless state == Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::PENDING_DEVELOPER_RELEASE
             UI.message("AppStoreState is not PENDING_DEVELOPER_RELEASE")
             return
           end
           decision = params[:app_decision]
-          decision ||= get_decision
+          decision ||= fetch_decision
           case decision
           when DicisionType::RELEASE
             UI.message("decision is release")
           when DicisionType::REJECT
             UI.message("decision is reject")
           else
-            decision ||= get_decision
+            decision ||= fetch_decision
           end
           release_version_if_possible(app: application, app_store_version: app_store_version) if decision == "release"
           reject_version_if_possible(app: application) if decision == "reject"
-  
-          UI.message("The taiwan_number_one plugin is finished!")
         else
           UI.message("no pending release version exist.")
         end
-
+        UI.message("The taiwan_number_one plugin action is finished!")
       end
 
-      def self.get_decision()
+      def self.fetch_decision
         decision = nil
         until ["release", "reject"].include?(decision)
           decision = UI.input("Please enter the app's release decision (release, reject): ")
           UI.message("App's decision must be release or reject")
         end
         # return decision
+        UI.message("return type #{decision}")
         if decision == DicisionType::RELEASE
-          UI.message("return type #{decision}")
           return DicisionType::RELEASE
         else
-          UI.message("return type #{decision}")
           return DicisionType::REJECT
         end
       end
 
-      def self.reject_version_if_possible(app: nil)
+      def self.reject_version_if_possible(app: nil, app_store_version: String)
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
         end
         if app.reject_version_if_possible!
-          UI.success("Successfully rejected previous version!")
+          UI.success("rejected version #{app_store_version} Successfully !")
         end
       end
 
-      def self.release_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
+      def self.release_version_if_possible(app: nil, app_store_version: String)
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
         end
-        model = app_store_version.create_app_store_version_release_request
-        UI.success("response model is #{model}")
 
-        # release(version_id: version_id)
-        # if
-        UI.success("Successfully released previous version!")
-        # end
+        UI.message("release version #{app_store_version} successfully!")
       end
 
       def self.description
