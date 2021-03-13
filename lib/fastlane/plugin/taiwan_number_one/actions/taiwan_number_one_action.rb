@@ -62,13 +62,13 @@ module Fastlane
           case decision
           when DicisionType::RELEASE
             UI.message("decision is release")
+            release_version_if_possible(app: application, app_store_version: app_store_version)
           when DicisionType::REJECT
             UI.message("decision is reject")
+            reject_version_if_possible(app: app, app_store_version: app_store_version)
           else
             decision ||= fetch_decision
           end
-          release_version_if_possible(app: application, app_store_version: app_store_version) if decision == "release"
-          reject_version_if_possible(app: application) if decision == "reject"
         else
           UI.message("no pending release version exist.")
         end
@@ -89,22 +89,31 @@ module Fastlane
           return DicisionType::REJECT
         end
       end
-
-      def self.reject_version_if_possible(app: nil, app_store_version: String)
+      
+      def self.release_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
         end
-        if app.reject_version_if_possible!
-          UI.success("rejected version #{app_store_version} Successfully !")
+
+        begin
+          app_store_version.create_app_store_version_release_request
+          UI.message("release version #{app_store_version.version_string} successfully!")
+        rescue => e
+          UI.user_error!("An error occurred while releasing version #{app_store_version}")
+          UI.error("#{e.message}\n#{e.backtrace.join("\n")}") if FastlaneCore::Globals.verbose?
         end
       end
 
-      def self.release_version_if_possible(app: nil, app_store_version: String)
+      def self.reject_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
         end
-
-        UI.message("release version #{app_store_version} successfully!")
+        
+        if app_store_version.reject!
+          UI.success("rejected version #{app_store_version} Successfully!")
+        else
+          UI.user_error!("An error occurred while rejected version #{app_store_version}")
+        end
       end
 
       def self.description
@@ -129,7 +138,6 @@ module Fastlane
         user ||= CredentialsManager::AppfileConfig.try_fetch_value(:apple_id)
         [
           FastlaneCore::ConfigItem.new(key: :app_decision,
-                                       short_option: "-d",
                                        env_name: "app_decision",
                                        description: "A description of your decision, should be release or reject",
                                        optional: false,
