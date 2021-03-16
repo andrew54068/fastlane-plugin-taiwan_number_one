@@ -110,7 +110,7 @@ module Fastlane
         end
         
         if app_store_version.reject!
-          UI.success("rejected version #{app_store_version} Successfully!")
+          UI.success("rejected version #{app_store_version.version_string} Successfully!")
         else
           UI.user_error!("An error occurred while rejected version #{app_store_version}")
         end
