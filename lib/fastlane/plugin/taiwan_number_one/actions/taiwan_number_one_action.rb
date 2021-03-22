@@ -11,6 +11,8 @@ module Fastlane
       end
 
       def self.run(params)
+        params[:api_key] ||= Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+
         app_id = params.fetch(:app_identifier)
         username = params.fetch(:username)
         unless app_id && username
@@ -18,21 +20,20 @@ module Fastlane
           return
         end
 
-        # Prompts select team if multiple teams and none specified
-        UI.message("Login to App Store Connect (#{params[:username]})")
-        Spaceship::ConnectAPI.login(
-          params[:username],
-          use_portal: false,
-          use_tunes: true,
-          tunes_team_id: params[:team_id],
-          team_name: params[:team_name]
-        )
-        UI.message("Login successful")
-
-        # Get App
-        application = Spaceship::Application.find(app_id)
-        unless application
-          UI.user_error!("Could not find app with bundle identifier '#{app_id}' on account #{params[:username]}")
+        token = self.api_token(params)
+        if token
+          UI.message("Using App Store Connect API token...")
+          Spaceship::ConnectAPI.token = token
+        else
+          UI.message("Login to App Store Connect (#{params[:username]})")
+          Spaceship::ConnectAPI.login(
+            params[:username],
+            use_portal: false,
+            use_tunes: true,
+            tunes_team_id: params[:team_id],
+            team_name: params[:team_name]
+          )
+          UI.message("Login successful")
         end
 
         app = Spaceship::ConnectAPI::App.find(app_id)
@@ -62,7 +63,7 @@ module Fastlane
           case decision
           when DicisionType::RELEASE
             UI.message("decision is release")
-            release_version_if_possible(app: application, app_store_version: app_store_version)
+            release_version_if_possible(app: app, app_store_version: app_store_version)
           when DicisionType::REJECT
             UI.message("decision is reject")
             reject_version_if_possible(app: app, app_store_version: app_store_version)
@@ -89,7 +90,7 @@ module Fastlane
           return DicisionType::REJECT
         end
       end
-      
+
       def self.release_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
@@ -108,12 +109,19 @@ module Fastlane
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
         end
-        
+
         if app_store_version.reject!
           UI.success("rejected version #{app_store_version.version_string} Successfully!")
         else
           UI.user_error!("An error occurred while rejected version #{app_store_version}")
         end
+      end
+
+      def self.api_token(params)
+        params[:api_key] ||= Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+        api_token ||= Spaceship::ConnectAPI::Token.create(params[:api_key]) if params[:api_key]
+        api_token ||= Spaceship::ConnectAPI::Token.from_json_file(params[:api_key_path]) if params[:api_key_path]
+        return api_token
       end
 
       def self.description
@@ -180,7 +188,22 @@ module Fastlane
                                        default_value_dynamic: true,
                                        verify_block: proc do |value|
                                          ENV["FASTLANE_ITC_TEAM_NAME"] = value.to_s
-                                       end)
+                                       end),
+          FastlaneCore::ConfigItem.new(key: :api_key_path,
+                                       env_name: "FL_REGISTER_DEVICE_API_KEY_PATH",
+                                       description: "Path to your App Store Connect API Key JSON file (https://docs.fastlane.tools/app-store-connect-api/#using-fastlane-api-key-json-file)",
+                                       optional: true,
+                                       conflicting_options: [:api_key],
+                                       verify_block: proc do |value|
+                                         UI.user_error!("Couldn't find API key JSON file at path '#{value}'") unless File.exist?(value)
+                                       end),
+          FastlaneCore::ConfigItem.new(key: :api_key,
+                                       env_name: "FL_REGISTER_DEVICE_API_KEY",
+                                       description: "Your App Store Connect API Key information (https://docs.fastlane.tools/app-store-connect-api/#use-return-value-and-pass-in-as-an-option)",
+                                       type: Hash,
+                                       optional: true,
+                                       sensitive: true,
+                                       conflicting_options: [:api_key_path])
         ]
       end
 
