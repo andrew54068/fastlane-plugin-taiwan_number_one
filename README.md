@@ -59,8 +59,20 @@ lane :release_decision do |options|
   taiwan_number_one(
     username: username,
     app_identifier: app_identifier,
-    app_decision: options[:app_decision]
+    app_decision: options[:app_decision],
+    api_key: api_key
   )
+end
+```
+
+and this:
+```
+desc "release App store version"
+lane :release_app do
+  result = release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::RELEASE)
+  if result == Fastlane::Actions::TaiwanNumberOneAction::ActionResult::SUCCESS
+    # do your thing here!
+  end
 end
 ```
 
@@ -73,10 +85,7 @@ lane :reject_app do
     issuer_id: ENV["ISSUER_ID"],
     key_content: ENV["ASC_API_KEY"]
   )
-  release_decision(
-    app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::REJECT,
-    api_key: api_key
-  )
+  release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::REJECT)
 end
 ```
 
@@ -125,6 +134,11 @@ team_id       |The ID of your App Store Connect team if you're in multiple teams
 team_name     |The name of your App Store Connect team if you're in multiple teams. (optional)|
 api_key_path	|Path to your App Store Connect API Key JSON file (https://docs.fastlane.tools/app-store-connect-api/#using-fastlane-api-key-json-file)	|
 api_key	      |Your App Store Connect API Key information (https://docs.fastlane.tools/app-store-connect-api/#use-return-value-and-pass-in-as-an-option) |
+
+## Action Return
+`Fastlane::Actions::TaiwanNumberOneAction::ActionResult::SUCCESS`
+or 
+`Fastlane::Actions::TaiwanNumberOneAction::ActionResult::DO_NOTHING`
 
 ## Run tests for this plugin
 

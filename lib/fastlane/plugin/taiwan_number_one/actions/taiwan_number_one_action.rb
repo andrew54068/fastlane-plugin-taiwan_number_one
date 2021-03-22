@@ -10,70 +10,87 @@ module Fastlane
         REJECT = "reject"
       end
 
+      module ActionResult
+        SUCCESS = "Success"
+        DO_NOTHING = "Nothing has changed"
+      end
+
       def self.run(params)
-        params[:api_key] ||= Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+        begin
+          params[:api_key] ||= Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
 
-        app_id = params.fetch(:app_identifier)
-        username = params.fetch(:username)
-        unless app_id && username
-          UI.message("Could not find app_id and username.")
-          return
-        end
-
-        token = self.api_token(params)
-        if token
-          UI.message("Using App Store Connect API token...")
-          Spaceship::ConnectAPI.token = token
-        else
-          UI.message("Login to App Store Connect (#{params[:username]})")
-          Spaceship::ConnectAPI.login(
-            params[:username],
-            use_portal: false,
-            use_tunes: true,
-            tunes_team_id: params[:team_id],
-            team_name: params[:team_name]
-          )
-          UI.message("Login successful")
-        end
-
-        app = Spaceship::ConnectAPI::App.find(app_id)
-        version = app.get_app_store_versions.first
-        UI.message("app_store_state is #{version.app_store_state}")
-        client ||= Spaceship::ConnectAPI
-        platform ||= Spaceship::ConnectAPI::Platform::IOS
-        filter = {
-          appStoreState: [
-            Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::PENDING_DEVELOPER_RELEASE
-          ].join(","),
-          platform: platform
-        }
-        app_store_version = app.get_app_store_versions(client: client, filter: filter, includes: "appStoreVersionSubmission")
-                               .sort_by { |v| Gem::Version.new(v.version_string) }
-                               .last
-        if app_store_version
-          version_string = app_store_version.version_string
-          state = app_store_version.app_store_state
-          UI.message("version #{version_string} is #{state}")
-          unless state == Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::PENDING_DEVELOPER_RELEASE
-            UI.message("AppStoreState is not PENDING_DEVELOPER_RELEASE")
+          app_id = params.fetch(:app_identifier)
+          username = params.fetch(:username)
+          unless app_id && username
+            UI.message("Could not find app_id and username.")
             return
           end
-          decision = params[:app_decision]
-          decision ||= fetch_decision
-          case decision
-          when DicisionType::RELEASE
-            UI.message("decision is release")
-            release_version_if_possible(app: app, app_store_version: app_store_version)
-          when DicisionType::REJECT
-            UI.message("decision is reject")
-            reject_version_if_possible(app: app, app_store_version: app_store_version)
+
+          token = self.api_token(params)
+          if token
+            UI.message("Using App Store Connect API token...")
+            Spaceship::ConnectAPI.token = token
           else
-            decision ||= fetch_decision
+            UI.message("Login to App Store Connect (#{params[:username]})")
+            Spaceship::ConnectAPI.login(
+              params[:username],
+              use_portal: false,
+              use_tunes: true,
+              tunes_team_id: params[:team_id],
+              team_name: params[:team_name]
+            )
+            UI.message("Login successful")
           end
-        else
-          UI.message("no pending release version exist.")
+
+          app = Spaceship::ConnectAPI::App.find(app_id)
+          version = app.get_app_store_versions.first
+          UI.message("app_store_state is #{version.app_store_state}")
+          client ||= Spaceship::ConnectAPI
+          platform ||= Spaceship::ConnectAPI::Platform::IOS
+          filter = {
+            appStoreState: [
+              Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::PENDING_DEVELOPER_RELEASE
+            ].join(","),
+            platform: platform
+          }
+          app_store_version = app.get_app_store_versions(client: client, filter: filter, includes: "appStoreVersionSubmission")
+                                 .sort_by { |v| Gem::Version.new(v.version_string) }
+                                 .last
+          if app_store_version
+            version_string = app_store_version.version_string
+            state = app_store_version.app_store_state
+            UI.message("version #{version_string} is #{state}")
+            unless state == Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::PENDING_DEVELOPER_RELEASE
+              UI.message("AppStoreState is not PENDING_DEVELOPER_RELEASE")
+              return
+            end
+            decision = params[:app_decision]
+            decision ||= fetch_decision
+
+            result = ActionResult::DO_NOTHING
+            case decision
+            when DicisionType::RELEASE
+              UI.message("decision is release")
+              result = release_version_if_possible(app: app, app_store_version: app_store_version)
+            when DicisionType::REJECT
+              UI.message("decision is reject")
+              result = reject_version_if_possible(app: app, app_store_version: app_store_version)
+            else
+              UI.user_error!("App's decision must be release or reject")
+              result = ActionResult::DO_NOTHING
+            end
+
+            UI.message("The taiwan_number_one plugin action is finished!")
+            return result
+          else
+            UI.message("no pending release version exist.")
+            UI.message("The taiwan_number_one plugin action is finished!")
+            return ActionResult::DO_NOTHING
+          end
+        rescue => error
+          UI.user_error!("The taiwan_number_one plugin action is finished with error: #{error.message}!")
+          return ActionResult::DO_NOTHING
         end
-        UI.message("The taiwan_number_one plugin action is finished!")
       end
 
       def self.fetch_decision
@@ -94,26 +111,32 @@ module Fastlane
       def self.release_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
+          return ActionResult::DO_NOTHING
         end
 
         begin
           app_store_version.create_app_store_version_release_request
           UI.message("release version #{app_store_version.version_string} successfully!")
+          return ActionResult::SUCCESS
         rescue => e
           UI.user_error!("An error occurred while releasing version #{app_store_version}")
           UI.error("#{e.message}\n#{e.backtrace.join("\n")}") if FastlaneCore::Globals.verbose?
+          return ActionResult::DO_NOTHING
         end
       end
 
       def self.reject_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
+          return ActionResult::DO_NOTHING
         end
 
         if app_store_version.reject!
           UI.success("rejected version #{app_store_version.version_string} Successfully!")
+          return ActionResult::SUCCESS
         else
           UI.user_error!("An error occurred while rejected version #{app_store_version}")
+          return ActionResult::DO_NOTHING
         end
       end
 
@@ -133,7 +156,7 @@ module Fastlane
       end
 
       def self.return_value
-        # If your method provides a return value, you can describe here what it does
+        return "'Success' if action passes, else, 'Nothing has changed'"
       end
 
       def self.details
