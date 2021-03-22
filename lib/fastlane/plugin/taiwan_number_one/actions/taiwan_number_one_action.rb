@@ -217,7 +217,8 @@ module Fastlane
       def self.example_code
         [
           'taiwan_number_one(
-            app_decision: "release", # Set to true to skip verification of HTML preview
+            app_decision: "release",
+            api_key: "api_key" # your app_store_connect_api_key 
           )'
         ]
       end

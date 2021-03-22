@@ -64,6 +64,24 @@ lane :release_decision do |options|
 end
 ```
 
+or this:
+```
+desc "reject App store version"
+lane :reject_app do
+  api_key = app_store_connect_api_key(
+    key_id: ENV["ASC_API_KEY_ID"],
+    issuer_id: ENV["ISSUER_ID"],
+    key_content: ENV["ASC_API_KEY"]
+  )
+  release_decision(
+    app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::REJECT,
+    api_key: api_key
+  )
+end
+```
+
+*for more info about app_store_connect_api_key, please refer to [here](http://docs.fastlane.tools/actions/app_store_connect_api_key/#app_store_connect_api_key) and [here](http://docs.fastlane.tools/app-store-connect-api/#using-an-app-store-connect-api-key)
+
 Since there might have some problem in `reject_if_possible` of `Deliver`, so it's better to call this Action before `Deliver` everytime.
 
 something like this:
@@ -105,6 +123,8 @@ username      |Your Apple ID Username                                       |
 app_identifier|The bundle identifier of your app                            |
 team_id       |The ID of your App Store Connect team if you're in multiple teams. (optional)|
 team_name     |The name of your App Store Connect team if you're in multiple teams. (optional)|
+api_key_path	|Path to your App Store Connect API Key JSON file (https://docs.fastlane.tools/app-store-connect-api/#using-fastlane-api-key-json-file)	|
+api_key	      |Your App Store Connect API Key information (https://docs.fastlane.tools/app-store-connect-api/#use-return-value-and-pass-in-as-an-option) |
 
 ## Run tests for this plugin
 
