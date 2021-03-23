@@ -96,8 +96,8 @@ module Fastlane
       def self.fetch_decision
         decision = nil
         until ["release", "reject"].include?(decision)
-          decision = UI.input("Please enter the app's release decision (release, reject): ")
-          UI.message("App's decision must be release or reject")
+          UI.user_error!("App's decision must be release or reject")
+          return
         end
         # return decision
         UI.message("return type #{decision}")
@@ -119,8 +119,7 @@ module Fastlane
           UI.message("release version #{app_store_version.version_string} successfully!")
           return ActionResult::SUCCESS
         rescue => e
-          UI.user_error!("An error occurred while releasing version #{app_store_version}")
-          UI.error("#{e.message}\n#{e.backtrace.join("\n")}") if FastlaneCore::Globals.verbose?
+          UI.user_error!("An error occurred while releasing version #{app_store_version}, #{e.message}\n#{e.backtrace.join("\n")}")
           return ActionResult::DO_NOTHING
         end
       end
