@@ -12,7 +12,7 @@ fastlane add_plugin taiwan_number_one
 
 ## About taiwan_number_one
 
-To approve or reject if status is Pending Developer Release.
+To approve or reject if status is `Pending Developer Release`, otherwise do nothing.
 
 #### This feature is requsted for a while:
 
@@ -33,10 +33,10 @@ https://github.com/fastlane/fastlane/issues/17539
 
 ## Usage
 
-##### install plugin for fastlane
+##### Install plugin for fastlane
 [install instructions](https://docs.fastlane.tools/plugins/using-plugins/)
 ```
-bundle exce fastlane add_plugin taiwan_number_one
+bundle exec fastlane add_plugin taiwan_number_one
 ```
 but I personally prefer adding plugin in `Gemfile` like this to avoid additional `Pluginfile` in ~'your_ios_project_dir'/fastlane
 
