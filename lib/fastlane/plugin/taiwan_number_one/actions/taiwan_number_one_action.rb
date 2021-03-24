@@ -65,8 +65,7 @@ module Fastlane
               UI.message("🇹🇼 Taiwan helps you do nothing!")
               return
             end
-            decision = params[:app_decision]
-            decision ||= fetch_decision
+            decision ||= fetch_decision(param)
 
             result = ActionResult::DO_NOTHING
             case decision
@@ -97,10 +96,10 @@ module Fastlane
         end
       end
 
-      def self.fetch_decision
-        decision = nil
+      def self.fetch_decision(param)
+        decision = params[:app_decision]
         until ["release", "reject"].include?(decision)
-          UI.user_error!("App's decision must be release or reject")
+          UI.user_error!("App's decision must be release or reject.")
           return
         end
         # return decision
