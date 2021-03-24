@@ -1,5 +1,4 @@
 require "fastlane/action"
-require "Spaceship"
 require_relative "../helper/taiwan_number_one_helper"
 
 module Fastlane
@@ -16,6 +15,7 @@ module Fastlane
       end
 
       def self.run(params)
+        require 'spaceship'
         begin
           params[:api_key] ||= Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
 
@@ -62,6 +62,7 @@ module Fastlane
             UI.message("version #{version_string} is #{state}")
             unless state == Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::PENDING_DEVELOPER_RELEASE
               UI.message("AppStoreState is not PENDING_DEVELOPER_RELEASE")
+              UI.message("🇹🇼 Taiwan helps you do nothing!")
               return
             end
             decision = params[:app_decision]
@@ -81,13 +82,16 @@ module Fastlane
             end
 
             UI.message("The taiwan_number_one plugin action is finished!")
+            UI.message("🇹🇼 Taiwan can help!")
             return result
           else
             UI.message("no pending release version exist.")
             UI.message("The taiwan_number_one plugin action is finished!")
+            UI.message("🇹🇼 Taiwan can help!")
             return ActionResult::DO_NOTHING
           end
         rescue => error
+          UI.message("🇹🇼 Taiwan might not be able to help you with this...")
           UI.user_error!("The taiwan_number_one plugin action is finished with error: #{error.message}!")
           return ActionResult::DO_NOTHING
         end
@@ -159,8 +163,14 @@ module Fastlane
       end
 
       def self.details
-        # Optional:
         "use fastlane to release or reject reviewed version"
+      end
+
+      def self.output
+        [
+          [ActionResult::SUCCESS, 'Successfully release or reject.'],
+          [ActionResult::DO_NOTHING, 'Do nothing.']
+        ]
       end
 
       def self.available_options
