@@ -65,7 +65,7 @@ module Fastlane
               UI.message("🇹🇼 Taiwan helps you do nothing!")
               return
             end
-            decision ||= fetch_decision(param)
+            decision ||= fetch_decision(params)
 
             result = ActionResult::DO_NOTHING
             case decision
@@ -96,7 +96,7 @@ module Fastlane
         end
       end
 
-      def self.fetch_decision(param)
+      def self.fetch_decision(params)
         decision = params[:app_decision]
         until ["release", "reject"].include?(decision)
           UI.user_error!("App's decision must be release or reject.")
@@ -249,7 +249,7 @@ module Fastlane
         [
           'taiwan_number_one(
             app_decision: "release",
-            api_key: "api_key" # your app_store_connect_api_key 
+            api_key: "api_key" # your app_store_connect_api_key
           )'
         ]
       end
