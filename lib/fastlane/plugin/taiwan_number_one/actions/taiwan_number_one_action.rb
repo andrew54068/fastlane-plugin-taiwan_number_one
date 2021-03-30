@@ -1,4 +1,5 @@
 require "fastlane/action"
+require "spaceship"
 require_relative "../helper/taiwan_number_one_helper"
 
 module Fastlane
@@ -15,7 +16,6 @@ module Fastlane
       end
 
       def self.run(params)
-        require 'spaceship'
         begin
           params[:api_key] ||= Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
 
