@@ -10,6 +10,7 @@ This project is a [_fastlane_](https://github.com/fastlane/fastlane) plugin. To 
 fastlane add_plugin taiwan_number_one
 ```
 
+Start from v0.2.7 we use this [workaround](https://github.com/fastlane/fastlane/issues/17283#issuecomment-711865915) to solve issue while using App Store Connect Api key.
 ## About taiwan_number_one
 
 To approve or reject if status is `Pending Developer Release`, otherwise do nothing.

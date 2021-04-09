@@ -71,7 +71,7 @@ module Fastlane
             case decision
             when DicisionType::RELEASE
               UI.message("decision is release")
-              result = release_version_if_possible(app: app, app_store_version: app_store_version)
+              result = release_version_if_possible(app: app, app_store_version: app_store_version, token: token)
             when DicisionType::REJECT
               UI.message("decision is reject")
               result = reject_version_if_possible(app: app, app_store_version: app_store_version)
@@ -111,16 +111,26 @@ module Fastlane
         end
       end
 
-      def self.release_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
+      def self.release_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion, token: nil)
         unless app
           UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
           return ActionResult::DO_NOTHING
         end
 
         begin
-          app_store_version.create_app_store_version_release_request
-          UI.message("release version #{app_store_version.version_string} successfully!")
-          return ActionResult::SUCCESS
+          if token 
+            now = Time.now
+            release_date_string = now.strftime("%Y-%m-%dT%H:00%:z")
+            app_store_version.update(attributes: {
+                earliest_release_date: release_date_string,
+                release_type: Spaceship::ConnectAPI::AppStoreVersion::ReleaseType::SCHEDULED
+            })
+            return ActionResult::SUCCESS
+          else
+            app_store_version.create_app_store_version_release_request
+            UI.message("release version #{app_store_version.version_string} successfully!")
+            return ActionResult::SUCCESS
+          end
         rescue => e
           UI.user_error!("An error occurred while releasing version #{app_store_version}, #{e.message}\n#{e.backtrace.join("\n")}")
           return ActionResult::DO_NOTHING
