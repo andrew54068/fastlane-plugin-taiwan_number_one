@@ -70,7 +70,7 @@ and this:
 ```
 desc "release App store version"
 lane :release_app do
-  result = release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::RELEASE)
+  result = release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DecisionType::RELEASE)
   if result == Fastlane::Actions::TaiwanNumberOneAction::ActionResult::SUCCESS
     # do your thing here!
   end
@@ -86,7 +86,7 @@ lane :reject_app do
     issuer_id: ENV["ISSUER_ID"],
     key_content: ENV["ASC_API_KEY"]
   )
-  release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::REJECT)
+  release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DecisionType::REJECT)
 end
 ```
 
@@ -108,9 +108,9 @@ end
 or 
 
 ```
-release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::RELEASE)
+release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DecisionType::RELEASE)
 
-release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DicisionType::REJECT)
+release_decision(app_decision: Fastlane::Actions::TaiwanNumberOneAction::DecisionType::REJECT)
 ```
 
 #### Use in terminal
