@@ -41,7 +41,7 @@ module Fastlane
             )
             UI.message("Login successful")
           end
-          
+
           app = Spaceship::ConnectAPI::App.find(app_id)
           version = app.get_app_store_versions.first
           UI.message("app_store_state is #{version.app_store_state}")
@@ -256,7 +256,7 @@ module Fastlane
                                        conflicting_options: [:api_key_path]),
           FastlaneCore::ConfigItem.new(key: :force,
                                        env_name: "FL_DECISION_FORCE",
-                                       description: "Skip verifying of current version state for reject reviewed version or cancel waiting review version.",
+                                       description: "Skip verifying of current version state for reject reviewed version or cancel waiting review version",
                                        is_string: false,
                                        default_value: false),
         ]
