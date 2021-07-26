@@ -5,7 +5,7 @@ require_relative "../helper/taiwan_number_one_helper"
 module Fastlane
   module Actions
     class TaiwanNumberOneAction < Action
-      module DicisionType
+      module DecisionType
         RELEASE = "release"
         REJECT = "reject"
       end
@@ -41,7 +41,7 @@ module Fastlane
             )
             UI.message("Login successful")
           end
-
+          
           app = Spaceship::ConnectAPI::App.find(app_id)
           version = app.get_app_store_versions.first
           UI.message("app_store_state is #{version.app_store_state}")
@@ -53,6 +53,15 @@ module Fastlane
             ].join(","),
             platform: platform
           }
+                    
+          if params[:force] && decision == DecisionType::REJECT
+            UI.message("decision is reject")
+            app_store_version = app.get_app_store_versions(client: client, includes: "appStoreVersionSubmission")
+                                 .sort_by { |v| Gem::Version.new(v.version_string) }
+                                 .last
+            return reject_version_if_possible(app: app, app_store_version: app_store_version)
+          end
+
           app_store_version = app.get_app_store_versions(client: client, filter: filter, includes: "appStoreVersionSubmission")
                                  .sort_by { |v| Gem::Version.new(v.version_string) }
                                  .last
@@ -63,16 +72,16 @@ module Fastlane
             unless state == Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::PENDING_DEVELOPER_RELEASE
               UI.message("AppStoreState is not PENDING_DEVELOPER_RELEASE")
               UI.message("🇹🇼 Taiwan helps you do nothing!")
-              return
+              return ActionResult::DO_NOTHING
             end
             decision ||= fetch_decision(params)
 
             result = ActionResult::DO_NOTHING
             case decision
-            when DicisionType::RELEASE
+            when DecisionType::RELEASE
               UI.message("decision is release")
               result = release_version_if_possible(app: app, app_store_version: app_store_version, token: token)
-            when DicisionType::REJECT
+            when DecisionType::REJECT
               UI.message("decision is reject")
               result = reject_version_if_possible(app: app, app_store_version: app_store_version)
             else
@@ -104,10 +113,10 @@ module Fastlane
         end
         # return decision
         UI.message("return type #{decision}")
-        if decision == DicisionType::RELEASE
-          return DicisionType::RELEASE
+        if decision == DecisionType::RELEASE
+          return DecisionType::RELEASE
         else
-          return DicisionType::REJECT
+          return DecisionType::REJECT
         end
       end
 
@@ -190,7 +199,7 @@ module Fastlane
                                        env_name: "app_decision",
                                        description: "A description of your decision, should be release or reject",
                                        optional: false,
-                                       default_value: DicisionType::RELEASE,
+                                       default_value: DecisionType::RELEASE,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :username,
                                        short_option: "-u",
@@ -244,7 +253,12 @@ module Fastlane
                                        type: Hash,
                                        optional: true,
                                        sensitive: true,
-                                       conflicting_options: [:api_key_path])
+                                       conflicting_options: [:api_key_path]),
+          FastlaneCore::ConfigItem.new(key: :force,
+                                       env_name: "FL_DECISION_FORCE",
+                                       description: "Skip verifying of current version state for reject reviewed version or cancel waiting review version.",
+                                       is_string: false,
+                                       default_value: false),
         ]
       end
 
