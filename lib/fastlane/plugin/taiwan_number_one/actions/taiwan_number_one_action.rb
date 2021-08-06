@@ -54,6 +54,7 @@ module Fastlane
             platform: platform
           }
                     
+          decision ||= fetch_decision(params)
           if params[:force] && decision == DecisionType::REJECT
             UI.message("decision is reject")
             app_store_version = app.get_app_store_versions(client: client, includes: "appStoreVersionSubmission")
@@ -74,7 +75,6 @@ module Fastlane
               UI.message("🇹🇼 Taiwan helps you do nothing!")
               return ActionResult::DO_NOTHING
             end
-            decision ||= fetch_decision(params)
 
             result = ActionResult::DO_NOTHING
             case decision
