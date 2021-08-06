@@ -60,6 +60,11 @@ module Fastlane
             app_store_version = app.get_app_store_versions(client: client, includes: "appStoreVersionSubmission")
                                  .sort_by { |v| Gem::Version.new(v.version_string) }
                                  .last
+            if app_store_version.app_store_state == Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::DEVELOPER_REJECTED
+              UI.message("app_store_state is already #{app_store_version.app_store_state}")
+              UI.message("🇹🇼 Taiwan helps you do nothing!")
+              return ActionResult::DO_NOTHING
+            end
             return reject_version_if_possible(app: app, app_store_version: app_store_version)
           end
 
