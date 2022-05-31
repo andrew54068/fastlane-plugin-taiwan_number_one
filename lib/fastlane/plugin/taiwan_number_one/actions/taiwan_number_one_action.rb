@@ -53,19 +53,14 @@ module Fastlane
             ].join(","),
             platform: platform
           }
-                    
+
           decision ||= fetch_decision(params)
           if params[:force] && decision == DecisionType::REJECT
             UI.message("decision is reject")
             app_store_version = app.get_app_store_versions(client: client, includes: "appStoreVersionSubmission")
-                                 .sort_by { |v| Gem::Version.new(v.version_string) }
-                                 .last
-            if app_store_version.app_store_state == Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::DEVELOPER_REJECTED
-              UI.message("app_store_state is already #{app_store_version.app_store_state}")
-              UI.message("🇹🇼 Taiwan helps you do nothing!")
-              return ActionResult::DO_NOTHING
-            end
-            return reject_version_if_possible(app: app, app_store_version: app_store_version)
+                                   .sort_by { |v| Gem::Version.new(v.version_string) }
+                                   .last
+            return reject_version_if_possible(client: client, app_store_version: app_store_version)
           end
 
           app_store_version = app.get_app_store_versions(client: client, filter: filter, includes: "appStoreVersionSubmission")
@@ -85,10 +80,10 @@ module Fastlane
             case decision
             when DecisionType::RELEASE
               UI.message("decision is release")
-              result = release_version_if_possible(app: app, app_store_version: app_store_version, token: token)
+              result = release_version_if_possible(client: client, app_store_version: app_store_version, token: token)
             when DecisionType::REJECT
               UI.message("decision is reject")
-              result = reject_version_if_possible(app: app, app_store_version: app_store_version)
+              result = reject_version_if_possible(client: client, app_store_version: app_store_version)
             else
               UI.user_error!("App's decision must be release or reject")
               result = ActionResult::DO_NOTHING
@@ -132,13 +127,13 @@ module Fastlane
         end
 
         begin
-          if token 
+          if token
             now = Time.now
             release_date_string = now.strftime("%Y-%m-%dT%H:00%:z")
             app_store_version.update(attributes: {
-                earliest_release_date: release_date_string,
-                release_type: Spaceship::ConnectAPI::AppStoreVersion::ReleaseType::SCHEDULED
-            })
+                                       earliest_release_date: release_date_string,
+                                       release_type: Spaceship::ConnectAPI::AppStoreVersion::ReleaseType::SCHEDULED
+                                     })
             return ActionResult::SUCCESS
           else
             app_store_version.create_app_store_version_release_request
@@ -151,19 +146,19 @@ module Fastlane
         end
       end
 
-      def self.reject_version_if_possible(app: nil, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
-        unless app
-          UI.user_error!("Could not find app with bundle identifier '#{params[:app_identifier]}' on account #{params[:username]}")
+      # For example https://appstoreconnect.apple.com/iris/v1/appStoreVersionSubmissions/575ee084-a3a6-4664-8ba5-49dd77a00927
+      # Request Method: DELETE
+      def self.reject_version_if_possible(client: Spaceship::ConnectAPI, app_store_version: Spaceship::ConnectAPI::AppStoreVersion)
+        if app_store_version.app_store_state == Spaceship::ConnectAPI::AppStoreVersion::AppStoreState::DEVELOPER_REJECTED
+          UI.message("app_store_state is already #{app_store_version.app_store_state}")
+          UI.message("🇹🇼 Taiwan helps you do nothing!")
           return ActionResult::DO_NOTHING
         end
 
-        if app_store_version.reject!
-          UI.success("rejected version #{app_store_version.version_string} Successfully!")
-          return ActionResult::SUCCESS
-        else
-          UI.user_error!("An error occurred while rejected version #{app_store_version}")
-          return ActionResult::DO_NOTHING
-        end
+        client.delete_app_store_version_submission(app_store_version_submission_id: app_store_version.id)
+        UI.success("Rejected version #{app_store_version.version_string} Successfully!")
+        UI.message("🇹🇼 Taiwan can help!")
+        return ActionResult::SUCCESS
       end
 
       def self.api_token(params)
@@ -191,8 +186,8 @@ module Fastlane
 
       def self.output
         [
-          [ActionResult::SUCCESS, 'Successfully release or reject.'],
-          [ActionResult::DO_NOTHING, 'Do nothing.']
+          [ActionResult::SUCCESS, "Successfully release or reject."],
+          [ActionResult::DO_NOTHING, "Do nothing."]
         ]
       end
 
@@ -263,7 +258,7 @@ module Fastlane
                                        env_name: "FL_DECISION_FORCE",
                                        description: "Skip verifying of current version state for reject reviewed version or cancel waiting review version",
                                        is_string: false,
-                                       default_value: false),
+                                       default_value: false)
         ]
       end
 
